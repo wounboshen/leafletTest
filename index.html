@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <script src="~/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+
+
+    <style>
+        #map {
+            height: 800px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="action-bar">
+        <input type="radio" name="action" id="sector" value="sector">
+        <label for="sector">Sector Drawing</label><br>
+        <input type="radio" name="action" id="freehand" value="freehand">
+        <label for="freehand">Freehand Drawing</label><br>
+        <input type="radio" name="action" id="none" value="none" checked="checked">
+        <label for="none">View Only</label><br>
+    </div>
+
+    <script>
+        var map;
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    currentLocation = position.coords;
+                    map = L.map('map').setView([currentLocation.latitude, currentLocation.longitude], 13);
+
+                    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+                    }).addTo(map);
+
+                    var userPosition = L.marker([currentLocation.latitude, currentLocation.longitude]).addTo(map);
+                });
+            }
+        }
+
+        function drawSector() {
+            map.dragging.disable();
+            let coordinates = [];
+            let isDrawing = false;
+            let temporaryPolyline;
+            map.on('mousedown', function (e) {
+                coordinates = [];
+                isDrawing = true;
+            });
+            map.on('mousemove', function (e) {
+                if (isDrawing) {
+                    coordinates.push(e.latlng);
+                    temporaryPolyline = L.polyline(coordinates).addTo(map);
+                }
+            });
+            map.on('mouseup', function (e) {
+                isDrawing = false;
+                var polygon = L.polygon(coordinates).addTo(map);
+                map.removeLayer(temporaryPolyline);
+            });
+        }
+
+        function drawFreehand() {
+            map.dragging.disable();
+            let coordinates = [];
+            let isDrawing = false;
+            let temporaryPolyline;
+            map.on('mousedown', function (e) {
+                coordinates = [];
+                isDrawing = true;
+            });
+            map.on('mousemove', function (e) {
+                if (isDrawing) {
+                    coordinates.push(e.latlng);
+                    temporaryPolyline = L.polyline(coordinates).addTo(map);
+                    temporaryPolyline.setStyle({
+                        color: 'red'
+                    });
+                }
+            });
+            map.on('mouseup', function (e) {
+                isDrawing = false;
+            });
+        }
+
+        function resetMouseEvents() {
+            map.dragging.enable();
+            map.removeEventListener('mousedown');
+            map.removeEventListener('mousemove');
+            map.removeEventListener('mouseup');
+        }
+
+        document.querySelectorAll('input[name="action"]').forEach((input) => {
+            input.addEventListener('change', (event) => {
+                switch (event.target.value) {
+                    case "sector":
+                        resetMouseEvents();
+                        drawSector();
+                        break;
+                    case "freehand":
+                        resetMouseEvents();
+                        drawFreehand();
+                        break;
+                    default:
+                        resetMouseEvents();
+                        break;
+                }
+            });
+        });
+
+        getLocation();
+    </script>
+</body>
+
+</html>
